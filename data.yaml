@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 6
+names: ['freshripe', 'freshunripe', 'overripe', 'ripe', 'rotten', 'unripe']
+
+roboflow:
+  workspace: dwarkadas-j-sanghvi-college-of-engineering-henpr
+  project: banana-ripening-process-anogz
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/dwarkadas-j-sanghvi-college-of-engineering-henpr/banana-ripening-process-anogz/dataset/1
