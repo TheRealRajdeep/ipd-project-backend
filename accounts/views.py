@@ -16,6 +16,7 @@ class RegisterView(APIView):
             return Response(UserSerializer(u).data, status=status.HTTP_201_CREATED)
         return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Modify your LoginView class:
 class LoginView(APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
@@ -25,7 +26,15 @@ class LoginView(APIView):
         user = authenticate(username=u, password=p)
         if user:
             login(request, user)
-            return Response(UserSerializer(user).data)
+            # Generate token for the user
+            from rest_framework.authtoken.models import Token
+            token, created = Token.objects.get_or_create(user=user)
+            # Get the user data
+            serializer = UserSerializer(user)
+            user_data = serializer.data
+            # Include token in response
+            user_data['auth_token'] = token.key
+            return Response(user_data)
         return Response({'error':'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):
