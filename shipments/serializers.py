@@ -120,7 +120,47 @@ class ShipmentSerializer(serializers.ModelSerializer):
             BananaImage.objects.create(shipment=shipment, image_data=img.read())
 
         return shipment
+    # Find the create method in ShipmentSerializer and modify it
 
+    def create(self, validated_data):
+        img = validated_data.pop('image', None)
+        cb = User.objects.get(id=validated_data.pop('created_by_id'))
+        rc = User.objects.get(id=validated_data.pop('receiver_id'))
+        
+        # Remove any manually specified delivery person
+        dp = validated_data.pop('delivery_person', None)
+        
+        # Create the shipment first without delivery person
+        shipment = Shipment.objects.create(
+            created_by=cb, receiver=rc, **validated_data
+        )
+        
+        # Auto-assign a delivery person
+        try:
+            # Get a random delivery person - in a real app, you'd use better logic like location-based assignment
+            delivery_persons = DeliveryPerson.objects.all()
+            if delivery_persons.exists():
+                assigned_dp = delivery_persons.order_by('?').first()  # Random selection
+                shipment.delivery_person = assigned_dp
+                shipment.status = 'IN_TRANSIT'  # Update status as a delivery person is assigned
+                shipment.save()
+        except Exception as e:
+            print(f"Error assigning delivery person: {str(e)}")
+            # Continue without assigning delivery person, it can be done later
+
+        # Process the image for ripeness detection
+        if img:
+            tmp_path = self._dump_to_temp(img)
+            out, b64 = self._run_prediction(tmp_path)
+            shipment.ripeness_summary = out['ripeness']
+            shipment.dominant_ripeness = out['dominant_ripeness']
+            shipment.shelf_life = out['shelf_life']
+            shipment.result_image = b64
+            shipment.save()
+            BananaImage.objects.create(shipment=shipment, image_data=img.read())
+
+        return shipment
+    
     def update(self, instance, validated_data):
         img = validated_data.pop('image', None)
         dp  = validated_data.pop('delivery_person', None)
